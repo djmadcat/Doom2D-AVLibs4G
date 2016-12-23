@@ -1,0 +1,42 @@
+ideal
+p386
+model flat,cpp
+
+udataseg
+
+extrn __snd_sampler:dword
+
+codeseg
+
+proc pcspeaker_timeproc uses ebx es
+public pcspeaker_timeproc
+	push ds
+	pop es
+	call [__snd_sampler]
+	mov al,ah
+	rol al,1
+	rcl ah,1
+	rcl ah,1
+	and ah,2
+	in al,61h
+	and al,0FCh
+	or al,ah
+	out 61h,al
+	ret
+endp
+
+proc pcspeaker_init uses eax
+public pcspeaker_init
+	in al,61h
+	and al,0FCh
+	or al,2
+	out 61h,al
+	ret
+endp
+
+proc pcspeaker_close
+public pcspeaker_close
+	ret
+endp
+
+end

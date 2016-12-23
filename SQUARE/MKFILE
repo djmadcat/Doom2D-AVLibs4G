@@ -1,0 +1,21 @@
+
+compiler cpp wpp386 "-fo=%s -zp1 -d1 -w2 -s -omilert -5s -j -zq -d__B_SQUARELIB"
+compiler asm tasm ",%s /ml/q/z/zi/t/m5"
+linker opt "op q"
+
+list common{
+  square
+}
+
+library sqr common
+  obj dir "tmp\\"
+  exe "..\\square.lib"
+
+link sqrdll common
+  "system nt_dll_avl"
+  obj dir "tmpdll\\"
+  exe "..\\win\\square.dll"
+  make library "..\\win\\sqrdll"
+  opt cpp def "-bt=nt -br -bd"
+
+project all sqrdll sqr

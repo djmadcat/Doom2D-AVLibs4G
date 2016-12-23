@@ -1,0 +1,111 @@
+#include <stdlib.h>
+#include <errno.h>
+#include <string.h>
+#include <svga.h>
+
+#define MAXRECT 256
+
+typedef struct{int x,y,w,h;} rect;
+
+static rect *rt,*rp;
+static redraw_f *fn;
+static int sl,st,sr,sb;
+
+extern "C" void *RD_init(int x,int y,int w,int h) {
+  rect *p;
+
+  if(!(p=(rect*)malloc((MAXRECT*2+1)*sizeof(rect)))) return NULL;
+  p->x=x;p->w=x+w-1;p->y=y;p->h=y+h-1;
+  memset(p+1,0,MAXRECT*2*sizeof(rect));
+  return p;
+}
+
+extern "C" void RD_release(void *p) {
+  if(p) free(p);
+}
+
+extern "C" void RD_start(void *p,redraw_f *f) {
+  rt=(rect*)p;fn=f;
+  sl=rt->x;sr=rt->w;
+  st=rt->y;sb=rt->h;
+  ++rt;
+  rp=rt;
+}
+
+static void add(int x,int r,int y,int b) {
+  int i;
+  int rx,rr,ry,rb;
+
+  for(i=0;i<MAXRECT;++i) if(rp[i].w) {
+    if(x>(rr=(rx=rp[i].x)+rp[i].w-1)) continue;
+    if(r<rx) continue;
+    if(y>(rb=(ry=rp[i].y)+rp[i].h-1)) continue;
+    if(b<ry) continue;
+    if(x<=rx && r>=rr && y<=ry && b>=rb) {rp[i].w=0;continue;}
+    if(x<rx) add(x,rx-1,y,b);
+    if(r>rr) add(rr+1,r,y,b);
+    if(y<ry) add((rx>x)?rx:x,(rr<r)?rr:r,y,ry-1);
+    if(b>rb) add((rx>x)?rx:x,(rr<r)?rr:r,rb+1,b);
+    return;
+  }
+  for(i=0;i<MAXRECT;++i) if(!rp[i].w) {
+    rp[i].x=x;rp[i].y=y;rp[i].w=r-x+1;rp[i].h=b-y+1;
+    return;
+  }
+  rx=sr+1;rr=sl-1;ry=sb+1;rb=st-1;
+  for(i=0;i<MAXRECT;++i) {
+    if(rp[i].x<rx) rx=rp[i].x;
+    if(rp[i].x+rp[i].w-1>rr) rr=rp[i].x+rp[i].w-1;
+    if(rp[i].y<ry) ry=rp[i].y;
+    if(rp[i].y+rp[i].h-1>rb) rb=rp[i].y+rp[i].h-1;
+    rp[i].w=0;
+  }
+  rp[0].x=rx;rp[0].y=ry;rp[0].w=rr-rx+1;rp[0].h=rb-ry+1;
+}
+
+extern "C" void RD_rectwh(int x,int y,int w,int h) {
+  RD_rect(x,y,x+w-1,y+h-1);
+}
+
+extern "C" void RD_rect(int l,int t,int r,int b) {
+  l&=0xFFFFFFFC;r=(r&0xFFFFFFFC)+3;
+  t&=0xFFFFFFFC;b=(b&0xFFFFFFFC)+3;
+  if(l>sr) return;
+  if(r<sl) return;
+  if(t>sb) return;
+  if(b<st) return;
+  if(l<sl) l=sl;
+  if(t<st) t=st;
+  if(r>sr) r=sr;
+  if(b>sb) b=sb;
+  add(l,r,t,b);
+}
+
+extern "C" void RD_spr(int x,int y,image *v) {
+  RD_rect(x-v->sx,y-v->sy,x-v->sx+v->w-1,y-v->sy+v->h-1);
+}
+
+extern "C" void RD_end(void) {
+  int i;
+
+  rp=rt+MAXRECT;
+  for(i=0;i<MAXRECT;++i) if(rt[i].w) {
+    add(rt[i].x,rt[i].x+rt[i].w-1,rt[i].y,rt[i].y+rt[i].h-1);
+  }
+  for(i=0;i<MAXRECT;++i) if(rp[i].w) {
+    svga->cutl=rp[i].x;svga->cutr=rp[i].x+rp[i].w-1;
+    svga->cutt=rp[i].y;svga->cutb=rp[i].y+rp[i].h-1;
+    fn();
+  }
+  for(i=0;i<MAXRECT;++i) if(rp[i].w) {
+    svga->update_rectwh(rp[i].x,rp[i].y,rp[i].w,rp[i].h);
+  }
+  svga->updatescr();
+  if(use_pages) {
+    for(i=0;i<MAXRECT;++i) if(rp[i].w) {
+      svga->update_rectwh(rp[i].x,rp[i].y,rp[i].w,rp[i].h);
+    }
+  }
+  memcpy(rp,rt,MAXRECT*sizeof(rect));
+  memset(rt,0,MAXRECT*sizeof(rect));
+}

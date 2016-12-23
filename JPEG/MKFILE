@@ -1,0 +1,26 @@
+
+compiler c   wcc386 "-fo=%s -zp1 -d1 -w3 -s -oilrte -5s -j -zq -d__B_JPEGLIB"
+compiler cpp wpp386 "-fo=%s -zp1 -d1 -w2 -s -oilrte -5s -j -zq -d__B_JPEGLIB"
+linker opt "op q"
+
+list common{
+  jidctfst jidctflt jidctred
+  jcomapi jdapimin jdapistd jdatasrc jdcoefct
+  jdcolor jddctmgr jdhuff jdinput jdmainct jdmarker
+  jdmaster jdmerge jdphuff jdpostct jdsample jdtrans
+  jerror jidctint jmemmgr jmemnobs jutils load
+}
+
+library jpeg common
+  obj dir "tmp\\"
+  exe "..\\jpeg.lib"
+
+link jpegdll common
+  "system nt_dll_avl"
+  obj dir "tmpdll\\"
+  exe "..\\win\\jpeg.dll"
+  make library "..\\win\\jpegdll"
+  opt cpp def "-bt=nt -br -bd"
+  opt c   def "-bt=nt -br -bd"
+
+project all jpegdll jpeg

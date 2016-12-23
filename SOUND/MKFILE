@@ -1,0 +1,35 @@
+
+compiler cpp wpp386 "-fo=%s -zp1 -d1 -w2 -s -oilrte -5s -j -zq -d__B_SOUNDLIB -i=c:\\dxsdk\\inc"
+compiler asm tasm ",%s /ml/q/z/zi/t/m5"
+linker opt "op q"
+
+list common{
+  sampler
+}
+
+list win{
+  soundwin
+}
+
+list dos{
+  sounddos sb pc timer
+}
+
+library sound dos common
+  obj dir "tmpdos\\"
+  exe "..\\dos\\sound.lib"
+
+library soundwin win common
+  obj dir "tmpwin\\"
+  exe "..\\win\\sound.lib"
+  opt cpp def "-bt=nt"
+
+link sounddll win common
+  "system nt_dll_avl library dsound,dxguid"
+  obj dir "tmpdll\\"
+  exe "..\\win\\sound.dll"
+  make library "..\\win\\sounddll"
+  opt cpp def "-bt=nt -br -bd"
+  opt asm def "/d__DLL__"
+
+project all sound soundwin sounddll

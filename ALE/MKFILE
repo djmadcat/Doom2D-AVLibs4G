@@ -1,0 +1,66 @@
+
+compiler cpp wpp386 "-fo=%s -zp1 -d1 -w2 -s @opt.def -5s -j -zq"
+linker opt "op q"
+
+list shell{
+  shell panel fpanel keybar fileop
+}
+
+list oldshell{
+  oldshell
+}
+
+list tablist{
+  tab
+}
+
+list common{
+  ale filecomp
+}
+
+list dos{
+  aledos
+}
+
+list win{
+  alewin
+}
+
+library tab tablist
+  obj dir "tmpdos\\"
+  exe "..\\avcpp.lib"
+
+link tabdll tablist
+  "system nt_dll"
+  obj dir "tmpdll\\"
+  exe "..\\win\\avcpp.dll"
+  make library "..\\win\\avcppdll"
+  opt cpp def "-bt=nt -br -bd -d__B_TABLIB"
+
+library ale dos common
+  obj dir "tmpdos\\"
+  exe "..\\dos\\ale.lib"
+
+library alewin win common
+  obj dir "tmpwin\\"
+  exe "..\\win\\ale.lib"
+  opt cpp def "-bt=nt"
+
+link aledll win common
+  "system nt_dll_avl"
+  obj dir "tmpdll\\"
+  exe "..\\win\\ale.dll"
+  make library "..\\win\\aledll"
+  opt cpp def "-bt=nt -br -bd -d__B_ALELIB"
+
+link an shell
+  "system pmodew_avl op stack=32K"
+  obj dir "tmpan\\"
+  exe "an.exe"
+
+link oldan oldshell
+  "system pmodew_avl op stack=32K"
+  obj dir "tmpan\\"
+  exe "ale.exe"
+
+project all tab tabdll aledll alewin ale an oldan

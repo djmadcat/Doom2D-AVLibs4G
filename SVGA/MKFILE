@@ -1,0 +1,37 @@
+
+compiler c   wcc386 "-fo=%s -zp1 -d1 -w3 -s -oilrte -5s -j -zq -d__B_SVGALIB"
+compiler cpp wpp386 "-fo=%s -zp1 -d1 -w2 -s -oilrte -5s -j -zq -d__B_SVGALIB -i=c:\\dxsdk\\inc"
+compiler asm tasm ",%s /ml/q/z/zi/t/m5"
+linker opt "op q"
+
+list common{
+  svgadrv loadimg lzapack redraw mapping palmaker
+}
+
+list win{
+  svgawin
+}
+
+list dos{
+  svga svgados
+}
+
+library svga dos common
+  obj dir "tmpdos\\"
+  exe "..\\dos\\svga.lib"
+
+library svgawin win common
+  obj dir "tmpwin\\"
+  exe "..\\win\\svga.lib"
+  opt cpp def "-bt=nt"
+  opt c   def "-bt=nt"
+
+link svgadll win common
+  "d a system nt_dll_avl library ddraw,dxguid"
+  obj dir "tmpdll\\"
+  exe "..\\win\\svga.dll"
+  make library "..\\win\\svgadll"
+  opt cpp def "-bt=nt -br -bd"
+  opt c   def "-bt=nt -br -bd"
+
+project all svgadll svgawin svga
