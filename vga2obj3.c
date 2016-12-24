@@ -1,12 +1,31 @@
 #include <stdio.h>
-#include <io.h>
 #include <fcntl.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 
-typedef unsigned char byte;
-typedef unsigned int word;
-typedef unsigned long dword;
+#if defined(__DOS__)
+#include <io.h>
+#endif
+
+// backport for DOS memory model
+#ifndef far
+#define far
+#endif
+
+// backport for DOS File Access Mode
+#ifndef O_BINARY
+#define O_BINARY 0x0000
+#endif
+
+// backport for DOS => POSIX
+#ifndef tell
+#define tell(fd) lseek(fd, 0, SEEK_CUR)
+#endif
+
+typedef uint8_t byte;
+typedef uint16_t word;
+typedef uint32_t dword;
 
 int vgah;
 int objh;
@@ -110,7 +129,7 @@ void chkvga(void) {
     if (palname[0]) {
         slen += 768;
     }
-    printf("Size of images: %lu bytes\n", slen);
+    printf("Size of images: %u bytes\n", slen);
     if (slen > 0x10000L) {
         puts("Segment exceeds 64K");
         close(vgah);
@@ -176,11 +195,11 @@ int main(int argc, char *argv[]) {
         puts("Usage: VGA2OBJ vgafile.vga objfile.obj [palette_name]");
         return 1;
     }
-    if ((vgah = _open(argv[1], O_BINARY | O_RDONLY)) == -1) {
+    if ((vgah = open(argv[1], O_BINARY | O_RDONLY)) == -1) {
         perror(argv[1]);
         return 1;
     }
-    if ((objh = _creat(argv[2], 0x20)) == -1) {
+    if ((objh = creat(argv[2], S_IREAD | S_IWRITE)) == -1) {
         perror(argv[2]);
         return 1;
     }
